@@ -108,7 +108,7 @@ def main(cfg):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--cfg", type=str, default="configs/cifar100_resnet18.yaml")
+    ap.add_argument("--cfg", type=str, default="bayes-moe/configs/cifar100_resnet18.yaml")
     args = ap.parse_args()
     with open(args.cfg, "r") as f: cfg = yaml.safe_load(f)
     main(cfg)
