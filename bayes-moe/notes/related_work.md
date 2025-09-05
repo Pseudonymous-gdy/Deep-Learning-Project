@@ -7,6 +7,7 @@
     - [Conditional Computation](https://github.com/Pseudonymous-gdy/Deep-Learning-Project/blob/main/bayes-moe/notes/related_work.md#2-conditional-computation)
     - [Output & Auxiliary Loss](https://github.com/Pseudonymous-gdy/Deep-Learning-Project/blob/main/bayes-moe/notes/related_work.md#3-output--auxiliary-loss)
     - [Flow Chart](https://github.com/Pseudonymous-gdy/Deep-Learning-Project/blob/main/bayes-moe/notes/related_work.md#4-flow-chart)
+  - [Fedus21：Switch Transformer](https://github.com/Pseudonymous-gdy/Deep-Learning-Project/blob/main/bayes-moe/notes/related_work.md#fedus21switch-transformer)
 - [Work Related to Bayesian DL](https://github.com/Pseudonymous-gdy/Deep-Learning-Project/blob/main/bayes-moe/notes/related_work.md#Bayesian-Deep-Learning)
 
 ---
@@ -55,7 +56,12 @@ J --> M[Calculate Auxiliary Loss]
 M --> N["Total Loss: L_total<br>= L_main + L_importance + L_load"]
 ```
 
+### Fedus21：Switch Transformer
+
+
+
 ## Bayesian Deep Learning
+
 
 
 
