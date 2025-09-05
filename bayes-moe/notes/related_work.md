@@ -3,10 +3,10 @@
 **Table of Contents:**
 - [Work Related to Mixture of Experts](Mixture-of-Experts)
   - [Shazeer17: Sparsely-Gated MoE](shazeer17sparsely-gated-moe)
-    - [Gating Computation](1-Gating-Computation)
-    - [Conditional Computation](2-Conditional-Computation)
-    - [Output & Auxiliary Loss](3-Output-&-Auxiliary-Loss)
-    - [Flow Chart](4-Flow-Chart)
+    - [Gating Computation](1-gating-computation)
+    - [Conditional Computation](2-conditional-computation)
+    - [Output & Auxiliary Loss](3-output-&-auxiliary-loss)
+    - [Flow Chart](4-flow-chart)
 - [Work Related to Bayesian DL](Bayesian-Deep-Learning)
 
 ---
@@ -56,6 +56,7 @@ M --> N["Total Loss: L_total<br>= L_main + L_importance + L_load"]
 ```
 
 ## Bayesian Deep Learning
+
 
 
 
