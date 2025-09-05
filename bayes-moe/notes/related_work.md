@@ -8,8 +8,8 @@
     - [Output & Auxiliary Loss](https://github.com/Pseudonymous-gdy/Deep-Learning-Project/blob/main/bayes-moe/notes/related_work.md#3-output--auxiliary-loss)
     - [Flow Chart](https://github.com/Pseudonymous-gdy/Deep-Learning-Project/blob/main/bayes-moe/notes/related_work.md#4-flow-chart)
   - [Fedus21：Switch Transformer](https://github.com/Pseudonymous-gdy/Deep-Learning-Project/blob/main/bayes-moe/notes/related_work.md#fedus21switch-transformer)
-    - [Switch Routing vs. MoE](https://github.com/Pseudonymous-gdy/Deep-Learning-Project/blob/main/bayes-moe/notes/related_work.md#1switch-routing-vsmoe)
-    - [Engineering Issues](https://github.com/Pseudonymous-gdy/Deep-Learning-Project/blob/main/bayes-moe/notes/related_work.md#2engineering-issues)
+    - [Switch Routing vs. MoE](https://github.com/Pseudonymous-gdy/Deep-Learning-Project/blob/main/bayes-moe/notes/related_work.md#1-switch-routing-vsmoe)
+    - [Engineering Issues](https://github.com/Pseudonymous-gdy/Deep-Learning-Project/blob/main/bayes-moe/notes/related_work.md#2-engineering-issues)
 - [Work Related to Bayesian DL](https://github.com/Pseudonymous-gdy/Deep-Learning-Project/blob/main/bayes-moe/notes/related_work.md#Bayesian-Deep-Learning)
 
 ---
@@ -95,6 +95,7 @@ where $P_i=\frac{1}{T}\sum_{x\in\mathcal{B}}p_i(x),f_i=\frac{1}{T}\cdot\sum_{x\i
 
 
 ## Bayesian Deep Learning
+
 
 
 
