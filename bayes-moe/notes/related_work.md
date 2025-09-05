@@ -1,13 +1,13 @@
 # Related Work
 
 **Table of Contents:**
-- [Work Related to Mixture of Experts](Mixture-of-Experts)
-  - [Shazeer17: Sparsely-Gated MoE](shazeer17sparsely-gated-moe)
+- [Work Related to Mixture of Experts](https://github.com/Pseudonymous-gdy/Deep-Learning-Project/blob/main/bayes-moe/notes/related_work.md#Mixture-of-Experts)
+  - [Shazeer17: Sparsely-Gated MoE](https://github.com/Pseudonymous-gdy/Deep-Learning-Project/blob/main/bayes-moe/notes/related_work.md#shazeer17sparsely-gated-moe)
     - [Gating Computation](https://github.com/Pseudonymous-gdy/Deep-Learning-Project/blob/main/bayes-moe/notes/related_work.md#1-gating-computation)
-    - [Conditional Computation](2-conditional-computation)
-    - [Output & Auxiliary Loss](3-output-&-auxiliary-loss)
-    - [Flow Chart](4-flow-chart)
-- [Work Related to Bayesian DL](Bayesian-Deep-Learning)
+    - [Conditional Computation](https://github.com/Pseudonymous-gdy/Deep-Learning-Project/blob/main/bayes-moe/notes/related_work.md#2-conditional-computation)
+    - [Output & Auxiliary Loss](https://github.com/Pseudonymous-gdy/Deep-Learning-Project/blob/main/bayes-moe/notes/related_work.md#3-output-&-auxiliary-loss)
+    - [Flow Chart](https://github.com/Pseudonymous-gdy/Deep-Learning-Project/blob/main/bayes-moe/notes/related_work.md#4-flow-chart)
+- [Work Related to Bayesian DL](https://github.com/Pseudonymous-gdy/Deep-Learning-Project/blob/main/bayes-moe/notes/related_work.md#Bayesian-Deep-Learning)
 
 ---
 ## Mixture of Experts
@@ -56,6 +56,7 @@ M --> N["Total Loss: L_total<br>= L_main + L_importance + L_load"]
 ```
 
 ## Bayesian Deep Learning
+
 
 
 
