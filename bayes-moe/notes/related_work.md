@@ -2,6 +2,7 @@
 
 **Table of Contents:**
 - [Work Related to Mixture of Experts](Mixture-of-Experts)
+  - [Shazeer17: Sparsely-Gated MoE](Shazeer17:Sparsely-Gated-MoE)
 - [Work Related to Bayesian DL](Bayesian-Deep-Learning)
 
 ---
@@ -10,8 +11,8 @@ This part records previous works related to MoE architecture.
 ### Shazeer17：Sparsely-Gated MoE
 Operations:
 1. Gating Computation
-  - add controllable noise
-    $$H(x)_i=(X\cdot W_g)_i+\text{StandardNormal}()\cdot\text{Softplus}((x\cdot W_\text{noise})_i)$$
+  - add controllable noise:
+    $$H(x) \gets (X \cdot W_g) + \text{StandardNormal}() \cdot \text{Softplus}(x \cdot W_{\text{noise}})$$
   - select only top-k gates
   - softmax application
 2. Conditional Computation
@@ -51,3 +52,4 @@ M --> N["Total Loss: L_total<br>= L_main + L_importance + L_load"]
 ```
 
 ## Bayesian Deep Learning
+
