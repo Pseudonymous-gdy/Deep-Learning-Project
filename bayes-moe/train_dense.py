@@ -1,37 +1,4 @@
 import torch
-
-@torch.no_grad()
-def expected_calibration_error(logits: torch.Tensor,
-                               targets: torch.Tensor,
-                               n_bins: int = 15):
-    """
-    logits: [N, C], raw scores
-    targets: [N], long
-    return: ece (float), bin_stats dict
-    """
-    probs = torch.softmax(logits, dim=1)
-    confs, preds = probs.max(dim=1)
-    targets = targets.to(preds.device)
-
-    bin_boundaries = torch.linspace(0, 1, steps=n_bins + 1, device=confs.device)
-    ece = torch.tensor(0., device=confs.device)
-    bin_acc, bin_conf, bin_count = [], [], []
-
-    N = confs.numel()
-    for i in range(n_bins):
-        lo, hi = bin_boundaries[i], bin_boundaries[i+1]
-        in_bin = (confs > lo) & (confs <= hi) if i > 0 else (confs >= lo) & (confs <= hi)
-        count = in_bin.sum().item()
-        if count > 0:
-            acc = (preds[in_bin] == targets[in_bin]).float().mean()
-            conf = confs[in_bin].mean()
-            gap = (conf - acc).abs()
-            ece += gap * (count / N)
-            bin_acc.append(acc.item()); bin_conf.append(conf.item()); bin_count.append(count)
-        else:
-            bin_acc.append(0.0); bin_conf.append(0.0); bin_count.append(0)
-    return ece.item(), {"acc": bin_acc, "conf": bin_conf, "count": bin_count}
-
 import os, argparse, yaml, random, numpy as np, torch
 import torch.nn as nn, torch.optim as optim
 from torch.utils.data import DataLoader
@@ -40,11 +7,19 @@ from metrics.ece import expected_calibration_error
 from metrics.nll import negative_log_likelihood
 from utils.reliability import plot_reliability
 
+
 def set_seed(s):
+    """Set random seeds for reproducibility (CPU and CUDA)."""
     random.seed(s); np.random.seed(s); torch.manual_seed(s); torch.cuda.manual_seed_all(s)
 
+
 def get_loaders(name, root, bs, nw):
+    """Return (train_loader, test_loader) for supported datasets.
+
+    Currently supports: cifar100 (standard torchvision loaders).
+    """
     if name.lower() == "cifar100":
+        # CIFAR-100 dataset normalization stats (mean,std)
         mean, std = (0.5071,0.4867,0.4408), (0.2675,0.2565,0.2761)
         T_train = transforms.Compose([
             transforms.RandomCrop(32, padding=4),
@@ -57,28 +32,42 @@ def get_loaders(name, root, bs, nw):
                DataLoader(test,  bs, shuffle=False, num_workers=nw, pin_memory=True)
     raise ValueError(f"Unknown dataset {name}")
 
+
 def evaluate(net, loader, device):
+    """Run a full evaluation pass and compute accuracy, ECE and NLL.
+
+    Returns: acc, ece, nll, bin_stats
+    """
     net.eval(); total, correct = 0, 0
     all_logits, all_targets = [], []
     with torch.no_grad():
         for x,y in loader:
             x,y = x.to(device), y.to(device)
             logits = net(x)
+            # collect on CPU to save GPU memory
             all_logits.append(logits.cpu()); all_targets.append(y.cpu())
             pred = logits.argmax(1); total += y.size(0); correct += (pred==y).sum().item()
     logits = torch.cat(all_logits); targets = torch.cat(all_targets)
     acc = correct/total
+    # compute calibration and likelihood metrics
     ece, bin_stats = expected_calibration_error(logits, targets, n_bins=15)
     nll = negative_log_likelihood(logits, targets)
     return acc, ece, nll, bin_stats
 
+
 def main(cfg):
+    """Main training and evaluation entrypoint.
+
+    This runs the training loop, evaluates once at the end, saves
+    reliability plot, metrics and optionally a checkpoint.
+    """
     set_seed(cfg.get("seed", 0))
     device = "cuda" if torch.cuda.is_available() else "cpu"
     os.makedirs(cfg["log_dir"], exist_ok=True)
 
     train_loader, test_loader = get_loaders(cfg["dataset"], cfg["data_root"],
                                             cfg["batch_size"], cfg["num_workers"])
+    # create a ResNet-18 with no pretrained weights and 100 classes
     net = models.resnet18(weights=None, num_classes=100).to(device)
     criterion = nn.CrossEntropyLoss()
     opt = optim.SGD(net.parameters(), lr=cfg["optimizer"]["lr"],
@@ -89,6 +78,7 @@ def main(cfg):
     else:
         sch = None
 
+    # standard training loop (no validation during training here)
     for epoch in range(1, cfg["epochs"]+1):
         net.train()
         for x,y in train_loader:
@@ -98,13 +88,16 @@ def main(cfg):
             loss.backward(); opt.step()
         if sch: sch.step()
 
+    # one final evaluation and save artifacts
     acc, ece, nll, bin_stats = evaluate(net, test_loader, device)
     plot_reliability(bin_stats, os.path.join(cfg["log_dir"], "reliability.png"))
     with open(os.path.join(cfg["log_dir"], "metrics.txt"), "w") as f:
         f.write(f"acc={acc:.4f}, ece={ece:.4f}, nll={nll:.4f}\n")
     if cfg.get("save_ckpt", True):
+        # save model state_dict (binary file)
         torch.save(net.state_dict(), os.path.join(cfg["log_dir"], "ckpt.pt"))
     print(f"[TEST] acc={acc:.4f} ece={ece:.4f} nll={nll:.4f}")
+
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
