@@ -2,7 +2,7 @@
 
 **Table of Contents:**
 - [Work Related to Mixture of Experts](Mixture-of-Experts)
-  - [Shazeer17: Sparsely-Gated MoE](Shazeer17:Sparsely-Gated-MoE)
+  - [Shazeer17: Sparsely-Gated MoE](shazeer17sparsely-gated-moe)
 - [Work Related to Bayesian DL](Bayesian-Deep-Learning)
 
 ---
@@ -52,4 +52,5 @@ M --> N["Total Loss: L_total<br>= L_main + L_importance + L_load"]
 ```
 
 ## Bayesian Deep Learning
+
 
