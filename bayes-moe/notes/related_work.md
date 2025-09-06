@@ -10,6 +10,8 @@
   - [Fedus21：Switch Transformer](https://github.com/Pseudonymous-gdy/Deep-Learning-Project/blob/main/bayes-moe/notes/related_work.md#fedus21switch-transformer)
     - [Switch Routing vs. MoE](https://github.com/Pseudonymous-gdy/Deep-Learning-Project/blob/main/bayes-moe/notes/related_work.md#1-switch-routing-vsmoe)
     - [Engineering Issues](https://github.com/Pseudonymous-gdy/Deep-Learning-Project/blob/main/bayes-moe/notes/related_work.md#2-engineering-issues)
+  - [Riquelme21：Vision MoE](https://github.com/Pseudonymous-gdy/Deep-Learning-Project/blob/main/bayes-moe/notes/related_work.md#riquelme21vision-moe)
+    - [Comparison between models](https://github.com/Pseudonymous-gdy/Deep-Learning-Project/blob/main/bayes-moe/notes/related_work.md#comparison-between-models)
 - [Work Related to Bayesian DL](https://github.com/Pseudonymous-gdy/Deep-Learning-Project/blob/main/bayes-moe/notes/related_work.md#Bayesian-Deep-Learning)
 
 ---
@@ -93,8 +95,32 @@ $$\text{loss}=\alpha\cdot N\cdot\sum_{i=1}^N (f_i\cdot P_i)$$
 
 where $P_i=\frac{1}{T}\sum_{x\in\mathcal{B}}p_i(x),f_i=\frac{1}{T}\cdot\sum_{x\in\mathcal{B}}\mathbb{1}(\arg\max{p(x)=i})$. Then, we try to figure out a pareto frontier of the loss function (namely this loss and the main loss - Cross Entropy in Language Modeling).
 
+### Riquelme21：Vision MoE
+
+#### Comparison between models
+The Vision Transformers (with MoE) could be recognized as things below:
+```mermaid
+flowchart LR
+A["..."] --> B[MultiHead Attention]
+B --> C[+]
+A --> C
+C --> D[Normal MLP]
+D --> E[MLP/Sparse MoE]
+E --> F[+]
+D --> F
+F --> G["..."]
+```
+
+This paper replace part of Multi Layer Perceptron into Sparse MoE, and the combined model:
+| Components | ViT(Dense) | V-MoE(Sparse) | Advantages |
+| --- | --- | --- | --- |
+| Feed Forward Layer | A Large-Scale MLP | Multiple MLP | More access to larger model|
+| Computation | Deal with all Parameters | Deal with Selected Experts only | More efficient |
+| Routing | None | Router | Adaptive, select experts based on content |
+| Core Hyperparameters | MLP Dimensions | Expert Number, Select number, Buffer Capacity | Balance between performance and efficiency |
 
 ## Bayesian Deep Learning
+
 
 
 
