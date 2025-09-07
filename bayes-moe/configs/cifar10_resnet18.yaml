@@ -1,0 +1,23 @@
+# bayes-moe/configs/cifar10_resnet18.yaml
+
+seed: 42
+dataset: cifar10
+data_root: bayes-moe/data
+log_dir: bayes-moe/runs/cifar10-resnet18
+
+batch_size: 128
+num_workers: 2
+epochs: 20
+ece_bins: 15
+save_ckpt: true
+
+model: resnet18
+
+optimizer:
+  name: sgd
+  lr: 0.1
+  momentum: 0.9
+  weight_decay: 5e-4
+
+scheduler:
+  name: cosine

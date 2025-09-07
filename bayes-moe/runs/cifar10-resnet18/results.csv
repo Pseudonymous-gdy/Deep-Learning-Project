@@ -1,0 +1,2 @@
+timestamp,commit_sha,dataset,ood_dataset,ood_split,seed,epochs,batch_size,lr,momentum,weight_decay,acc,ece,nll,train_time_sec,ckpt_path,fig_path
+2025-09-08T01:21:48,,cifar10,,test,42,20,128,0.1,0.9,0.0005,0.8295,0.029718,0.495067,789.94,bayes-moe/runs/cifar10-resnet18\ckpt.pt,bayes-moe/runs/cifar10-resnet18\reliability.png

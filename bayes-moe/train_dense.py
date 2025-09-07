@@ -4,7 +4,6 @@ Contains the CLI entrypoint, data-loader wiring (uses bayes-moe/datasets when
 available), the training loop, evaluation (accuracy / ECE / NLL) and
 artifact exporting (metrics CSV, metrics.txt, reliability plot, checkpoint).
 
-Small and well-commented so students can read/modify training logic quickly.
 Run example:
     python bayes-moe/train_dense.py --cfg bayes-moe/configs/cifar100_resnet18.yaml
 """
@@ -19,7 +18,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms, models
 
-# --- Optional: use external datasets package if present (recommended) ---
+# build datasets designed in datasets/*
 try:
     # expect: bayes-moe/datasets/__init__.py defines build_dataset/build_loader
     from datasets import build_dataset, build_loader
@@ -40,7 +39,7 @@ if TYPE_CHECKING:
     def build_dataset(name: str, root: str, split: str, download: bool = True): ...
     def build_loader(ds, batch_size: int, shuffle: bool, num_workers: int = 4): ...
 
-# --- metrics & plotting (you already have these) ---
+# --- metrics & plotting block import ---
 from metrics.ece import expected_calibration_error
 from metrics.nll import negative_log_likelihood
 from utils.reliability import plot_reliability
@@ -50,7 +49,7 @@ from utils.reliability import plot_reliability
 # Utilities
 # -----------------------------
 def set_seed(s: int):
-    """Set random seeds for reproducibility (CPU and CUDA)."""
+    """Set random seeds for reproducibility (CPU and CUDA). This is for convenience."""
     random.seed(s)
     np.random.seed(s)
     torch.manual_seed(s)
@@ -60,6 +59,7 @@ def set_seed(s: int):
 
 
 def ensure_dir(p: str):
+    '''Ensure directory exists; create if not.'''
     os.makedirs(p, exist_ok=True)
 
 
@@ -78,18 +78,20 @@ def append_metrics_row(csv_path: str, fieldnames: list, row: dict):
 # -----------------------------
 def _builtin_cifar_loaders(name, root, bs, nw):
     """
+    This is a fallback loader for CIFAR-100 only. It is carried out when the datasets are unavailable.
     Fallback: only CIFAR-100. Use external datasets module for CIFAR-10/SVHN/OOD.
     Returns (train_loader, test_loader).
     """
-    if name.lower() != "cifar100":
+    if name.lower() != "cifar100": # require only cifar100
         raise ValueError(
             f"[train_dense] dataset={name} requires bayes-moe/datasets/ module. "
             f"Fallback supports only cifar100."
         )
-    mean, std = (0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761)
+    mean, std = (0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761) # normalization for CIFAR-100
+    # transformations to strengthen generalization of cifar100
     T_train = transforms.Compose([
-        transforms.RandomCrop(32, padding=4),
-        transforms.RandomHorizontalFlip(),
+        transforms.RandomCrop(32, padding=4), # randomly crop a 32x32 patch with 4 pixels padding
+        transforms.RandomHorizontalFlip(), # randomly flip the image horizontally
         transforms.ToTensor(),
         transforms.Normalize(mean, std)
     ])
@@ -97,8 +99,8 @@ def _builtin_cifar_loaders(name, root, bs, nw):
         transforms.ToTensor(),
         transforms.Normalize(mean, std)
     ])
-    train = datasets.CIFAR100(root=root, train=True, download=True, transform=T_train)
-    test = datasets.CIFAR100(root=root, train=False, download=True, transform=T_test)
+    train = datasets.CIFAR100(root=root, train=True, download=True, transform=T_train) # load train set
+    test = datasets.CIFAR100(root=root, train=False, download=True, transform=T_test) # load test set
     train_loader = DataLoader(train, bs, shuffle=True, num_workers=nw, pin_memory=True,
                               persistent_workers=(nw > 0))
     test_loader = DataLoader(test, bs, shuffle=False, num_workers=nw, pin_memory=True,
@@ -107,7 +109,7 @@ def _builtin_cifar_loaders(name, root, bs, nw):
 
 
 def get_id_loaders(name, root, bs, nw):
-    """Return ID (train, test) loaders for cifar100/cifar10."""
+    """Return ID (train_loader, test_loader) loaders for cifar100/cifar10."""
     if HAS_DATASETS_MODULE:
         # When the optional `datasets` package is present these helpers are
         # provided by bayes-moe/datasets/__init__.py. Static analyzers may mark
@@ -124,7 +126,9 @@ def get_id_loaders(name, root, bs, nw):
 
 
 def get_ood_loader(ood_name, root, bs, nw, split="test"):
-    """Return OOD loader (placeholder). Requires datasets module."""
+    """Return OOD loader (placeholder). Requires datasets module.
+    Adoptable if OOD dataset is supported and required.
+    """
     if ood_name is None:
         return None
     if not HAS_DATASETS_MODULE:
