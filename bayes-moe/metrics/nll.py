@@ -1,3 +1,8 @@
+"""Likelihood utilities.
+
+Small wrapper around cross-entropy that returns a Python float for logging.
+"""
+
 import torch
 import torch.nn.functional as F
 

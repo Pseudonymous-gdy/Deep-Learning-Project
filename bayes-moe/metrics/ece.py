@@ -1,3 +1,9 @@
+"""Calibration utilities.
+
+Primary export: `expected_calibration_error` which computes ECE and
+per-bin statistics used for reliability diagrams.
+"""
+
 import torch
 
 

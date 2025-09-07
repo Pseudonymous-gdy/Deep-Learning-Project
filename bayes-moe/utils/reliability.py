@@ -1,3 +1,10 @@
+"""Small plotting utilities for reliability diagrams.
+
+`plot_reliability` writes a simple reliability diagram (accuracy vs. confidence)
+to `save_path`. Kept deliberately minimal to avoid matplotlib dependencies in
+unit tests other than this plotting helper.
+"""
+
 import matplotlib.pyplot as plt
 
 
