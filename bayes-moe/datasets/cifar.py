@@ -8,6 +8,15 @@ from torchvision import datasets, transforms
 from .stats import DATASET_STATS
 
 def _build_transforms(name: str, is_train: bool):
+    '''
+    Build the standard transforms.
+    Inputs:
+    - name: str, name of the dataset originated in DATASET_STATS.
+    - is_train: bool, whether the transforms is used for training set.
+
+    Returns:
+    - tfm: torchvision.transforms, the standard transforms.
+    '''
     mean, std = DATASET_STATS[name]["mean"], DATASET_STATS[name]["std"]
     if is_train:
         return transforms.Compose([
