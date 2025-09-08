@@ -141,36 +141,98 @@ def get_ood_loader(ood_name, root, bs, nw, split="test"):
     ood_ds = build_dataset(ood_name, root, split=split, download=True)
     return build_loader(ood_ds, batch_size=bs, shuffle=False, num_workers=nw)
 
+from contextlib import nullcontext
+from typing import Callable, ContextManager, Any
+
+# Type alias: a factory that returns a context manager when called.
+AutocastCtx = Callable[[], ContextManager[Any]]
+
+def _get_autocast_ctx(device) -> AutocastCtx:
+    """
+    Return a callable that produces an autocast context manager appropriate
+    for the runtime environment and PyTorch version.
+
+    Behavior:
+    - If device is CPU (or None), return a no-op context (nullcontext).
+    - If device is CUDA:
+        1) Try the unified new API (torch.amp.autocast(device_type="cuda"))
+        2) Then try torch.autocast(device_type="cuda")
+        3) Fall back to legacy torch.cuda.amp.autocast
+        4) If none available, return nullcontext for safety
+    This makes the code backward- and forward-compatible across PyTorch releases.
+    """
+    dev = str(device).lower() if device is not None else "cpu"
+    # If not CUDA, use a no-op context (do not autocast on CPU)
+    if not dev.startswith("cuda"):
+        return lambda: nullcontext()
+
+    # 1) Prefer the new unified AMP API (torch.amp.autocast)
+    try:
+        return lambda: torch.amp.autocast(device_type="cuda")
+    except Exception:
+        pass
+
+    # 2) Some versions expose torch.autocast - try it
+    try:
+        return lambda: torch.autocast(device_type="cuda")
+    except Exception:
+        pass
+
+    # 3) Fall back to legacy CUDA-specific autocast
+    try:
+        from torch.cuda.amp import autocast as _legacy_autocast
+        return _legacy_autocast
+    except Exception:
+        # 4) Safe fallback: no-op
+        return lambda: nullcontext()
 
 # -----------------------------
 # Train & Eval
 # -----------------------------
 def train_one_epoch(model, loader, optimizer, device, criterion, use_amp=False, scaler=None):
-    model.train()
-    total_loss, total, step = 0.0, 0, 0
+    """
+    Run one training epoch over `loader` and return the average loss per sample.
+
+    Arguments:
+    - model: nn.Module to train
+    - loader: iterable/DataLoader yielding (inputs, targets)
+    - optimizer: optimizer instance (e.g., SGD/Adam)
+    - device: device string or torch.device (e.g., 'cuda' or 'cpu')
+    - criterion: loss function returning a scalar loss
+    - use_amp: whether to attempt mixed precision (AMP)
+    - scaler: GradScaler instance when using AMP on CUDA, otherwise None
+
+    Returns:
+    - average loss (float) computed as sum(loss * batch_size) / total_samples
+    """
+    model.train() # train mode
+    total_loss, total, step = 0.0, 0, 0 # initialization
     for x, y in loader:
-        x, y = x.to(device, non_blocking=True), y.to(device, non_blocking=True)
-        optimizer.zero_grad(set_to_none=True)
-        if use_amp and scaler is not None:
-            with torch.cuda.amp.autocast():
+        x, y = x.to(device, non_blocking=True), y.to(device, non_blocking=True) # move to device, non_blocking for faster transfer
+        optimizer.zero_grad(set_to_none=True) # clear the gradients as None rather than 0 for memory efficiency
+
+        # Use AMP only when requested, scaler provided, and running on CUDA.
+        if use_amp and scaler is not None and str(device).lower().startswith("cuda"): # automatic mixed precision
+            ac = _get_autocast_ctx(device)
+            with ac():
                 logits = model(x)
-                loss = criterion(logits, y)
-            scaler.scale(loss).backward()
-            scaler.step(optimizer)
-            scaler.update()
-        else:
+                loss = criterion(logits, y) # compute loss with logits and targets
+            scaler.scale(loss).backward() # scale loss and backward
+            scaler.step(optimizer) # step optimizer
+            scaler.update() # update scaler for next iteration
+        else: # non-amp block
             logits = model(x)
             loss = criterion(logits, y)
             loss.backward()
             optimizer.step()
-        bs = y.size(0)
-        total_loss += float(loss.detach()) * bs
-        total += bs
-        step += 1
+        bs = y.size(0) # batch size
+        total_loss += float(loss.detach()) * bs # accumulate total loss
+        total += bs # accumulate total samples
+        step += 1 # increment step
     return total_loss / max(total, 1)
 
 
-@torch.no_grad()
+@torch.no_grad() # require no gradient computation for evaluation
 def evaluate(model, loader, device, n_bins=15):
     """Compute accuracy, ECE, NLL and collect bin stats for reliability diagram."""
     model.eval()
@@ -181,12 +243,12 @@ def evaluate(model, loader, device, n_bins=15):
         logits = model(x)
         all_logits.append(logits.cpu())
         all_targets.append(y.cpu())
-        pred = logits.argmax(1)
-        total += y.size(0)
-        correct += (pred == y).sum().item()
-    logits = torch.cat(all_logits)
-    targets = torch.cat(all_targets)
-    acc = correct / max(total, 1)
+        pred = logits.argmax(1) # get predicted class
+        total += y.size(0) # count total samples
+        correct += (pred == y).sum().item() # count correct predictions
+    logits = torch.cat(all_logits) # concatenate all logits
+    targets = torch.cat(all_targets) # concatenate all targets
+    acc = correct / max(total, 1) # compute accuracy, avoid division by zero
     ece, bin_stats = expected_calibration_error(logits, targets, n_bins=n_bins)
     nll = negative_log_likelihood(logits, targets)
     return acc, ece, nll, bin_stats
