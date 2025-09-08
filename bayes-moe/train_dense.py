@@ -186,6 +186,47 @@ def _get_autocast_ctx(device) -> AutocastCtx:
         # 4) Safe fallback: no-op
         return lambda: nullcontext()
 
+
+# GradScaler factory to handle PyTorch API differences and silence deprecation
+from typing import Optional, Any
+
+def _get_grad_scaler(device, enabled: bool):
+    """
+    Safe GradScaler factory that works across PyTorch versions.
+
+    Returns a GradScaler instance when AMP is enabled and a CUDA device is
+    available, otherwise returns None. Uses getattr-based lookups to avoid
+    static-analysis import-time errors on environments where newer APIs are
+    unavailable.
+    """
+    dev = str(device).lower() if device is not None else "cpu"
+    if not enabled or not dev.startswith("cuda"):
+        return None
+
+    # Try to obtain GradScaler from torch.amp in a safe, dynamic way.
+    amp_mod = getattr(torch, "amp", None)
+    if amp_mod is not None:
+        scaler_cls = getattr(amp_mod, "GradScaler", None)
+        if scaler_cls is not None:
+            # Try common constructor signatures: keyword device_type or positional
+            try:
+                return scaler_cls(device_type="cuda")
+            except TypeError:
+                try:
+                    return scaler_cls("cuda")
+                except Exception:
+                    pass
+            except Exception:
+                pass
+
+    # Fallback: legacy torch.cuda.amp.GradScaler
+    try:
+        from torch.cuda.amp import GradScaler as _legacy_scaler
+
+        return _legacy_scaler()
+    except Exception:
+        return None
+
 # -----------------------------
 # Train & Eval
 # -----------------------------
@@ -272,7 +313,7 @@ def main(cfg, cli_override):
     set_seed(seed)
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    # ---- I/O & dirs ----
+    # ---- I/O & dirs comparison ----
     log_dir = cfg.get("log_dir", "./logs/w1")
     ensure_dir(log_dir)
 
@@ -289,18 +330,19 @@ def main(cfg, cli_override):
 
     # ---- model & opt ----
     num_classes = 100 if dataset.lower() == "cifar100" else 10
-    model = models.resnet18(weights=None, num_classes=num_classes).to(device)
+    model = models.resnet18(weights=None, num_classes=num_classes).to(device) # construct model based on dataset
 
-    criterion = nn.CrossEntropyLoss()
-    opt_cfg = cfg.get("optimizer", {"lr": 0.1, "momentum": 0.9, "weight_decay": 5e-4})
+    criterion = nn.CrossEntropyLoss() # loss function
+    opt_cfg = cfg.get("optimizer", {"lr": 0.1, "momentum": 0.9, "weight_decay": 5e-4}) # optimizer config
     optimizer = optim.SGD(
         model.parameters(),
         lr=float(opt_cfg.get("lr", 0.1)),
         momentum=float(opt_cfg.get("momentum", 0.9)),
         weight_decay=float(opt_cfg.get("weight_decay", 5e-4)),
         nesterov=bool(opt_cfg.get("nesterov", False)),
-    )
+    ) # construct optimizer
 
+    # ---- scheduler ----
     sch_cfg = cfg.get("scheduler", {"name": "cosine"})
     if sch_cfg.get("name", "cosine").lower() == "cosine":
         scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=int(cfg.get("epochs", 120)))
@@ -308,7 +350,9 @@ def main(cfg, cli_override):
         scheduler = None
 
     use_amp = bool(cfg.get("amp", False))
-    scaler = torch.cuda.amp.GradScaler() if (use_amp and device == "cuda") else None
+    # Use factory to create a GradScaler compatible with the installed PyTorch
+    # API and the current device. This avoids deprecated constructor warnings.
+    scaler = _get_grad_scaler(device, enabled=use_amp)
 
     # ---- loaders ----
     train_loader, test_loader = get_id_loaders(dataset, data_root, batch_size, num_workers)
