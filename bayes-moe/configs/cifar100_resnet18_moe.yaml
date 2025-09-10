@@ -1,0 +1,32 @@
+dataset: cifar100
+data_root: bayes-moe/data
+num_classes: 100
+epochs: 20
+batch_size: 128
+num_workers: 2
+model: resnet18
+
+moe:
+  use_moe_head: true
+  d_model: 512
+  num_experts: 4
+  top_k: 1
+  hidden_factor: 4
+  lb_coef: 0.01
+  temperature: 1.0
+
+optimizer:
+  name: sgd
+  lr: 0.1
+  momentum: 0.9
+  weight_decay: 0.0005
+
+scheduler:
+  name: cosine
+
+metrics:
+  ece_bins: 15
+
+seed: 42
+log_dir: bayes-moe/runs/cifar100-resnet18-moe
+save_ckpt: true
