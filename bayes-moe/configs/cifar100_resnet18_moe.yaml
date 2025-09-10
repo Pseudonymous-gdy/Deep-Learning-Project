@@ -1,8 +1,8 @@
 dataset: cifar100
 data_root: bayes-moe/data
 num_classes: 100
-epochs: 1
-batch_size: 256
+epochs: 20
+batch_size: 128
 num_workers: 2
 model: resnet18
 
