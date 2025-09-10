@@ -7,9 +7,9 @@ from torchvision import datasets, transforms, models
 from tqdm import tqdm
 import pandas as pd
 
-from bayes_moe.models.moe.block import MoEHead
-from bayes_moe.models.moe.balance_loss import balance_loss
-from bayes_moe.metrics import expected_calibration_error as ece_fn, negative_log_likelihood as nll_fn
+from models.moe.block import MoEHead
+from models.moe.balance_loss import balance_loss
+from metrics import expected_calibration_error as ece_fn, negative_log_likelihood as nll_fn
 
 def set_seed(s: int):
     import random, numpy as np, torch
