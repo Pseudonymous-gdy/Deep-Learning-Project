@@ -18,7 +18,7 @@ Directly run the script `train_dense.py`, e.g.,
 
 ### Architecture
 
-```mermaid
+```plaintext
 bayes-moe/
 |- configs/
 |   |- cifar100-resnet18.yaml // config file for training and evaluation
@@ -51,21 +51,20 @@ implementation files in the codebase.
 
 ```mermaid
 flowchart LR
-	A[Backbone
-	(ResNet18)\nfeatures: (B, D)] --> B[Top-K Gate\n(proj -> logits -> top-k)]
-	B --> C1[Selected expert indices\n(B, k) + combine weights (B, k)]
+	A["Backbone<br/>(ResNet18)<br/>features: (B, D)"] --> B["Top-K Gate<br/>(proj -> logits -> top-k)"]
+	B --> C1["Selected expert indices<br/>(B, k) + combine weights (B, k)"]
 	C1 --> D{Experts}
-	subgraph EXPERTS [E experts]
+	subgraph EXPERTS["E experts"]
 		direction TB
-		E1[Expert 0\nMLP -> logits (Be0, C)]
-		E2[Expert 1\nMLP -> logits (Be1, C)]
-		E3[Expert 2\nMLP -> logits (Be2, C)]
-		E4[Expert ...]
+		E1["Expert 0<br/>MLP -> logits (Be0, C)"]
+		E2["Expert 1<br/>MLP -> logits (Be1, C)"]
+		E3["Expert 2<br/>MLP -> logits (Be2, C)"]
+		E4["Expert ..."]
 	end
-	D --> F[Weighted aggregation\n(sum over experts -> (B, C))]
-	F --> G[Final logits (B, C) -> CrossEntropyLoss]
-	B --> H[Aux stats: probs_mean (E,), entropy]
-	H --> I[Balance regularizer\nbalance_loss(probs_mean)]
+	D --> F["Weighted aggregation<br/>(sum over experts -> (B, C))"]
+	F --> G["Final logits (B, C) -> CrossEntropyLoss"]
+	B --> H["Aux stats: probs_mean (E,), entropy"]
+	H --> I["Balance regularizer<br/>balance_loss(probs_mean)"]
 	I --> G
 ```
 
