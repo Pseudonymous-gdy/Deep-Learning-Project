@@ -35,31 +35,31 @@ class TopKGate(nn.Module):
         self.temperature = temperature
 
     def forward(self, x: torch.Tensor):
-            # Project input to expert logits: shape (B, E)
-            logits = self.proj(x)
+        # Project input to expert logits: shape (B, E)
+        logits = self.proj(x)
 
-            # Compute softmax probabilities across experts for monitoring purposes.
-            # These probabilities are not directly used to perform routing; routing
-            # uses the raw logits (top-k selection). Temperature can be applied
-            # to the monitoring softmax to control sharpness.
-            probs = F.softmax(logits / max(self.temperature, 1e-6), dim=-1)  # (B, E)
+        # Compute softmax probabilities across experts for monitoring purposes.
+        # These probabilities are not directly used to perform routing; routing
+        # uses the raw logits (top-k selection). Temperature can be applied
+        # to the monitoring softmax to control sharpness.
+        probs = F.softmax(logits / max(self.temperature, 1e-6), dim=-1)  # (B, E)
 
-            # Select top-k experts per example using the raw logits. topk_val are
-            # the logits corresponding to the chosen experts and topk_idx are their
-            # integer indices. Shapes: both (B, k).
-            topk_val, topk_idx = torch.topk(logits, k=self.k, dim=-1)       # (B, k)
+        # Select top-k experts per example using the raw logits. topk_val are
+        # the logits corresponding to the chosen experts and topk_idx are their
+        # integer indices. Shapes: both (B, k).
+        topk_val, topk_idx = torch.topk(logits, k=self.k, dim=-1)       # (B, k)
 
-            # Convert the selected logits into normalized combine weights. This
-            # is a small softmax computed only over the k selected logits for each
-            # example. The resulting combine_w is used to weight expert outputs.
-            combine_w = F.softmax(topk_val, dim=-1)                          # (B, k)
+        # Convert the selected logits into normalized combine weights. This
+        # is a small softmax computed only over the k selected logits for each
+        # example. The resulting combine_w is used to weight expert outputs.
+        combine_w = F.softmax(topk_val, dim=-1)                          # (B, k)
 
-            # Prepare auxiliary monitoring values to help with load-balancing and
-            # diagnostics: per-expert mean probability across the batch, and the
-            # average entropy of the per-example expert distribution.
-            aux = {
-                    "probs_mean": probs.mean(dim=0),  # (E,) mean soft probability per expert
-                    "entropy": -(probs * (probs.clamp_min(1e-12)).log()).sum(dim=-1).mean()
-            }
+        # Prepare auxiliary monitoring values to help with load-balancing and
+        # diagnostics: per-expert mean probability across the batch, and the
+        # average entropy of the per-example expert distribution.
+        aux = {
+                "probs_mean": probs.mean(dim=0),  # (E,) mean soft probability per expert
+                "entropy": -(probs * (probs.clamp_min(1e-12)).log()).sum(dim=-1).mean()
+        }
 
-            return topk_idx, combine_w, aux
+        return topk_idx, combine_w, aux

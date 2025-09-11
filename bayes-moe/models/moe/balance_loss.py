@@ -3,7 +3,7 @@ import torch
 
 def balance_loss(probs_mean: torch.Tensor, lb_coef: float) -> torch.Tensor:
     """
-    Regularization to encourage balanced expert usage.
+    Regularization to encourage balanced expert usage (L2-loss(expert probabilities ~ uniform distri)).
 
     This function computes a simple mean-squared-error between the per-expert
     mean soft-probabilities (computed across the batch) and the uniform
@@ -20,8 +20,8 @@ def balance_loss(probs_mean: torch.Tensor, lb_coef: float) -> torch.Tensor:
         - scalar tensor representing the balance regularization term.
     """
     if lb_coef <= 0:
-            return torch.zeros((), device=probs_mean.device)
+        return torch.zeros((), device=probs_mean.device) # return 0 if coeff is non-positive
     E = probs_mean.numel()
-    target = torch.full_like(probs_mean, 1.0 / E)
+    target = torch.full_like(probs_mean, 1.0 / E) # uniform distribution
     # MSE to the uniform distribution, scaled by E for numerical stability.
     return lb_coef * ((probs_mean - target) ** 2).sum() * E

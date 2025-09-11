@@ -8,6 +8,16 @@ class ExpertMLP(nn.Module):
     """
     Small MLP used as an expert. Maps a d_model-dim feature vector to class logits.
     The architecture is a simple 2-layer MLP with a GELU activation.
+
+    Layers: input - Linear - GELU - Linear - output
+
+    Returns:
+        - logits: Tensor (B, C)
+
+    Args:
+        - d_model: input feature dimension
+        - num_classes: output logits dimension
+        - hidden_factor: hidden layer size factor relative to d_model
     """
     def __init__(self, d_model: int, num_classes: int, hidden_factor: int = 4):
         super().__init__()
@@ -57,7 +67,7 @@ class MoEHead(nn.Module):
 
         Returns:
           - logits: (B, C)
-          - aux: dict from the gate with monitoring statistics
+          - aux: dict from the gate with monitoring statistics (e.g., probs_mean)
         """
         topk_idx, combine_w, aux = self.gate(x)   # topk_idx: (B, k), combine_w: (B, k)
         B, k = topk_idx.shape
@@ -74,13 +84,13 @@ class MoEHead(nn.Module):
             mask = (topk_idx == e).any(dim=-1)
             if not mask.any():
                 continue
-            x_e = x[mask]                         # (Be, D)
-            y_e = self.experts[e](x_e)           # (Be, C)
-            w_sel = combine_w[mask]               # (Be, k)
-            idx_sel = topk_idx[mask]              # (Be, k)
+            x_e = x[mask]                         # (Be, D), Be = number of examples selecting expert e
+            y_e = self.experts[e](x_e)            # (Be, C), expert output for selected examples
+            w_sel = combine_w[mask]               # (Be, k), combine weights for selected examples
+            idx_sel = topk_idx[mask]              # (Be, k), top-k indices for selected examples
             # pick the combine weight corresponding to expert e for each selected example
             w_e = (w_sel * (idx_sel == e).float()).sum(dim=-1)  # (Be,)
             # accumulate weighted expert logits into the output
-            y[mask] += y_e * w_e.unsqueeze(-1)
+            y[mask] += y_e * w_e.unsqueeze(-1) # (Be, C) weighted addition
 
         return y, aux
