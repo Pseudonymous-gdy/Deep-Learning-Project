@@ -21,6 +21,16 @@ from PIL import Image
 # can fail on some Windows/Conda DLL setups. It's slightly less efficient
 # than the NumPy path but reliable for small datasets like CIFAR.
 def pil_to_tensor_no_numpy(pic: Image.Image) -> torch.Tensor:
+    '''
+    Convert a PIL Image to a torch.FloatTensor without using NumPy.
+    This avoids calling into NumPy's C-API from within torch/torchvision which can fail on some Windows/Conda DLL setups.
+    It's slightly less efficient than the NumPy path but reliable for small datasets like CIFAR.
+
+    Args:
+        pic (PIL.Image): Image to be converted to tensor.
+    Returns:
+        Tensor: Converted image.
+    '''
     if isinstance(pic, torch.Tensor):
         return pic.float()
     if not isinstance(pic, Image.Image):
@@ -105,6 +115,10 @@ else:
         # assume signature (bin_stats, save_path) -> adapt
         @torch.no_grad()
         def _wrapped_plot_reliability(logits, targets, n_bins, save_path):
+            '''
+            Adapted wrapper for reliability plotting.
+            Converts logits/targets to bin_stats_dict and calls the original function.
+            '''
             probs = F.softmax(logits, dim=1)
             confs, preds = probs.max(dim=1)
             correct = preds.eq(targets).float()
@@ -216,6 +230,9 @@ def build_optimizer_and_scheduler(params, cfg, steps_per_epoch):
 
 @torch.no_grad()
 def evaluate(backbone, head, loader, device, ece_bins=15):
+    '''
+    Evaluation function. Returns accuracy, NLL, ECE, and logits/labels for plotting reliability plots.
+    '''
     ce = nn.CrossEntropyLoss(reduction="sum")
     backbone.eval(); head.eval()
     total, ce_sum, correct = 0, 0.0, 0
@@ -321,8 +338,8 @@ def main(cfg_path: str):
         for it, (x, y) in enumerate(train_loader, 1):
             # Move batch to device and compute features
             x, y = x.to(device, non_blocking=True), y.to(device, non_blocking=True)
-            feats = backbone(x); feats = torch.flatten(feats, 1)
-            logits, aux = forward_head(feats)
+            feats = backbone(x); feats = torch.flatten(feats, 1) # resnet18 outputs (B, 512, 1, 1); flatten to (B, 512)
+            logits, aux = forward_head(feats) # logits: (B, num_classes); aux: dict with gate statistics
 
             # primary cross-entropy loss
             loss_ce = ce(logits, y)
@@ -353,11 +370,11 @@ def main(cfg_path: str):
         print(f"[Eval] epoch={epoch} acc={acc:.4f} nll={nll:.4f} ece={ece:.4f}")
         best_acc = max(best_acc, acc)
 
-        # 追加结果
+        # write results to csv
         with open(results_csv, "a", encoding="utf-8") as f:
             f.write(f"{epoch},{acc:.6f},{nll:.6f},{ece:.6f}\n")
 
-        # 保存 checkpoint
+        # save checkpoint
         if save_ckpt:
             torch.save({
                 "epoch": epoch,

@@ -1,0 +1,4 @@
+acc: 0.853100
+nll: 0.436402
+ece(15bins): 0.029810
+num_experts: 4  top_k: 1  lb_coef: 0.01
