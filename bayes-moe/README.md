@@ -18,7 +18,7 @@ Directly run the script `train_dense.py`, e.g.,
 
 ### Architecture
 
-```plaintext
+```mermaid
 bayes-moe/
 |- configs/
 |   |- cifar100-resnet18.yaml // config file for training and evaluation
@@ -67,8 +67,6 @@ flowchart LR
 	B --> H[Aux stats: probs_mean (E,), entropy]
 	H --> I[Balance regularizer\nbalance_loss(probs_mean)]
 	I --> G
-
-	style EXPERTS stroke:#333,stroke-width:1px
 ```
 
 #### Architecture (detailed)
